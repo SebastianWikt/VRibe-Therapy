@@ -88,3 +88,17 @@ __pycache__/
 # =========================
 *.bak
 *.swp
+
+# =========================
+# Local backups / temp folders to ignore
+# (workspace-specific folders shown by `git status`)
+# =========================
+# Unity backup folder with space in name
+My\ project/
+
+# Temporary build/test folders inside the Unity project
+unity-app/.utmp/
+unity-app/sample_BackUpThisFolder_ButDontShipItWithYourGame/
+unity-app/My\ project_BurstDebugInformation_DoNotShip/
+unity-app/sample_android_BackUpThisFolder_ButDontShipItWithYourGame/
+unity-app/sample_*BackUpThisFolder_ButDontShipItWithYourGame/
