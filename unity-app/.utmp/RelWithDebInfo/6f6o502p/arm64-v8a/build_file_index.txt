@@ -1,0 +1,2 @@
+C:\Pancakes_HooHacks2026\pancaking\unity-app\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\CMakeLists.txt
+C:\Pancakes_HooHacks2026\pancaking\unity-app\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\GameActivity\CMakeLists.txt
