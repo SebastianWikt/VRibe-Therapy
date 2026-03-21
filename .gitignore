@@ -1,0 +1,90 @@
+# =========================
+# OS / System Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Unity Generated Folders
+# =========================
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+MemoryCaptures/
+
+# =========================
+# Unity Cache / IDE Files
+# =========================
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.mdb
+*.opendb
+
+# =========================
+# Keep Unity meta files!
+# =========================
+!*.meta
+
+# =========================
+# IDEs (VSCode / Rider / IntelliJ)
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Android / Quest Build Artifacts
+# =========================
+.gradle/
+*.apk
+*.aab
+*.ap_
+*.keystore
+*.keystore.user
+
+# =========================
+# Unity Addressables / Asset Bundles
+# =========================
+ServerData/
+
+# =========================
+# Logs / Crash Reports
+# =========================
+sysinfo.txt
+mono_crash.*
+*.stacktrace
+*.log
+
+# =========================
+# Optional: EEG / Data files
+# (adjust depending on your workflow)
+# =========================
+Data/
+*.csv
+*.edf
+*.bdf
+
+# =========================
+# Python (if using EEG bridge)
+# =========================
+venv/
+__pycache__/
+*.pyc
+
+# =========================
+# Misc
+# =========================
+*.bak
+*.swp
