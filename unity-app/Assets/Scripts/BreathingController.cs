@@ -289,16 +289,6 @@ public class BreathingController : MonoBehaviour
             canvasGO.AddComponent<GraphicRaycaster>();
         }
 
-        // Full-screen dim overlay
-        GameObject overlayGO = new GameObject("BreathingOverlay");
-        overlayGO.transform.SetParent(canvas.transform, false);
-        var overlayImage = overlayGO.AddComponent<Image>();
-        overlayImage.color = overlayColor;
-        var overlayRect = overlayGO.GetComponent<RectTransform>();
-        overlayRect.anchorMin = Vector2.zero;
-        overlayRect.anchorMax = Vector2.one;
-        overlayRect.sizeDelta = Vector2.zero;
-        overlayImage.raycastTarget = false;
 
         // Container for the bubble so we can scale/position as one unit
         GameObject container = new GameObject("BreathingContainer");
@@ -307,6 +297,8 @@ public class BreathingController : MonoBehaviour
         containerRect.sizeDelta = new Vector2(800, 600);
         containerRect.anchoredPosition = Vector2.zero;
         containerRectTransform = containerRect;
+        // Now create the exit UI, parented to the container
+        CreateExitUI(container);
         // Outline (white ring) - placed behind the gradient circle
         GameObject outlineGO = new GameObject("BreathingOutline");
         outlineGO.transform.SetParent(container.transform, false);
