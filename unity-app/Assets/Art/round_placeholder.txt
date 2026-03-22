@@ -1,0 +1,7 @@
+Round sprite placeholder
+
+Place a circular PNG here to use as the breathing circle artwork.
+Recommended: 512x512 PNG with transparent background, filename: round.png
+Path to place it: Assets/Art/round.png
+
+After adding the image, in the BreathingExercise scene select the BreathingCircle Image and assign the sprite.
