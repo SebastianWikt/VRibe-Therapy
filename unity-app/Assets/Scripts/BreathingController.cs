@@ -22,13 +22,12 @@ public class BreathingController : MonoBehaviour
     public float canvasDistance = 1.2f;
 
     [Header("Presets")]
-    [Tooltip("If true, the breathing loop will start automatically on Start().")]
     public bool autoStart = false;
 
     [Header("Visuals")]
     public Color gradientColorA = new Color(0.62f, 0.92f, 0.98f, 1f);
     public Color gradientColorB = new Color(0.18f, 0.5f, 0.78f, 1f);
-    [Tooltip("Set alpha to 0 to disable dim overlay (recommended for VR)")]
+    [Tooltip("Alpha 0 = no overlay. Keep at 0 for VR.")]
     public Color overlayColor = new Color(0f, 0f, 0f, 0f);
     public Vector2 circleSize = new Vector2(240f, 240f);
     public float outlinePadding = 10f;
@@ -36,7 +35,7 @@ public class BreathingController : MonoBehaviour
     public float holdPulseFrequency = 0.1f;
     public float holdPulseRamp = 0.25f;
 
-    // Cached references
+    // Cached references — never use GameObject.Find on these (fails on inactive objects)
     private GameObject canvasGO;
     private Image circleImage;
     private Image outlineImage;
@@ -45,8 +44,6 @@ public class BreathingController : MonoBehaviour
     private Text phaseText;
     private Text subtitleText;
     private Font uiFontCached;
-
-    // 3D exit button lives in world space, separate from the UI canvas
     private GameObject exitButton3D;
 
     [Header("Exit UI")]
@@ -62,8 +59,6 @@ public class BreathingController : MonoBehaviour
             : (Camera.main != null ? Camera.main.transform : null);
 
         PositionCanvasInFrontOf(cam, canvasDistance);
-
-        // Position exit button now that canvas has been placed
         PositionExitButton();
 
         if (autoStart) StartBreathing();
@@ -80,18 +75,14 @@ public class BreathingController : MonoBehaviour
         Vector2 c = new Vector2(size * 0.5f, size * 0.5f);
         float maxR = size * 0.5f;
         for (int y = 0; y < size; y++)
-        {
             for (int x = 0; x < size; x++)
             {
-                float d = Vector2.Distance(new Vector2(x, y), c) / maxR;
-                d = Mathf.Clamp01(d);
+                float d     = Mathf.Clamp01(Vector2.Distance(new Vector2(x, y), c) / maxR);
                 float m     = Mathf.SmoothStep(0f, 1f, d);
                 Color col   = Color.Lerp(centerColor, edgeColor, m);
-                float alpha = 1f - Mathf.SmoothStep(0.45f, 1f, d);
-                col.a *= alpha;
+                col.a      *= 1f - Mathf.SmoothStep(0.7f, 1f, d);
                 tex.SetPixel(x, y, col);
             }
-        }
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
     }
@@ -103,16 +94,13 @@ public class BreathingController : MonoBehaviour
         Vector2 c = new Vector2(size * 0.5f, size * 0.5f);
         float maxR = size * 0.5f;
         for (int y = 0; y < size; y++)
-        {
             for (int x = 0; x < size; x++)
             {
-                float d = Vector2.Distance(new Vector2(x, y), c) / maxR;
-                float alpha = 0f;
-                if (d >= innerRatio && d <= outerRatio)
-                    alpha = 1f - Mathf.SmoothStep(innerRatio, outerRatio, d);
+                float d     = Vector2.Distance(new Vector2(x, y), c) / maxR;
+                float alpha = (d >= innerRatio && d <= outerRatio)
+                    ? 1f - Mathf.SmoothStep(innerRatio, outerRatio, d) : 0f;
                 tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
             }
-        }
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
     }
@@ -132,15 +120,15 @@ public class BreathingController : MonoBehaviour
         if (circleImage == null || containerRectTransform == null || phaseText == null)
             SetupUI();
 
-        if (canvasGO != null)      canvasGO.SetActive(true);
-        if (circleImage != null)   circleImage.enabled = true;
-        if (phaseText != null)     phaseText.enabled = true;
+        if (canvasGO != null)    canvasGO.SetActive(true);
+        if (circleImage != null) circleImage.enabled = true;
+        if (phaseText != null)   phaseText.enabled = true;
         if (containerRectTransform != null)
         {
             containerRectTransform.localScale = Vector3.one;
             containerRectTransform.gameObject.SetActive(true);
         }
-        if (exitButton3D != null)  exitButton3D.SetActive(true);
+        if (exitButton3D != null) exitButton3D.SetActive(true);
 
         loopCoroutine = StartCoroutine(BreathLoop());
     }
@@ -161,100 +149,86 @@ public class BreathingController : MonoBehaviour
     public void Exit() => OnExitButtonPressed();
 
     // -------------------------------------------------------------------------
-    // 3D world-space exit button
-    // Parented to THIS transform (BreathingExercise), not the UI canvas.
-    // PositionExitButton() moves it into the right world position after the
-    // canvas has been placed by PositionCanvasInFrontOf().
+    // Exit button
     // -------------------------------------------------------------------------
+
+    private void OnExitButtonPressed()
+    {
+        Debug.Log("BreathingController: Exit pressed.");
+        StopBreathing();
+        if (canvasGO != null) canvasGO.SetActive(false);
+        onExit?.Invoke();
+    }
 
     private void CreateExitButton3D()
     {
         exitButton3D = new GameObject("ExitButton3D");
-
-        // Parent to this script's GameObject so it gets destroyed with it,
-        // but lives in world space (not pixel-space canvas).
         exitButton3D.transform.SetParent(this.transform, false);
         exitButton3D.transform.localScale = Vector3.one;
 
-        // ---- Visual quad ----
-        var quad  = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        // Visual quad
+        var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
         quad.name = "ExitButtonFill";
         quad.transform.SetParent(exitButton3D.transform, false);
         quad.transform.localPosition = Vector3.zero;
         quad.transform.localRotation = Quaternion.identity;
-        quad.transform.localScale    = new Vector3(0.12f, 0.05f, 1f); // 12cm x 5cm
+        quad.transform.localScale    = new Vector3(0.12f, 0.05f, 1f);
 
         var rend = quad.GetComponent<Renderer>();
         rend.material       = new Material(Shader.Find("Unlit/Color"));
-        rend.material.color = new Color(0.08f, 0.08f, 0.12f, 1f);
+        rend.material.color = new Color(0.08f, 0.08f, 0.14f, 1f);
 
-        // Remove the MeshCollider CreatePrimitive adds — we use BoxCollider instead
+        // Remove MeshCollider added by CreatePrimitive
         var meshCol = quad.GetComponent<Collider>();
         if (meshCol != null) Destroy(meshCol);
 
-        // ---- Text label ----
+        // Text label
         var labelGO = new GameObject("ExitLabel");
         labelGO.transform.SetParent(exitButton3D.transform, false);
         labelGO.transform.localPosition = new Vector3(0f, 0f, -0.002f);
         labelGO.transform.localScale    = Vector3.one * 0.004f;
-        var tm          = labelGO.AddComponent<TextMesh>();
-        tm.text         = "Exit";
-        tm.fontSize     = 32;
-        tm.fontStyle    = FontStyle.Bold;
-        tm.color        = Color.white;
-        tm.alignment    = TextAlignment.Center;
-        tm.anchor       = TextAnchor.MiddleCenter;
+        var tm       = labelGO.AddComponent<TextMesh>();
+        tm.text      = "Exit";
+        tm.fontSize  = 32;
+        tm.fontStyle = FontStyle.Bold;
+        tm.color     = Color.white;
+        tm.alignment = TextAlignment.Center;
+        tm.anchor    = TextAnchor.MiddleCenter;
 
-        // ---- Trigger collider (generous depth so finger poke registers) ----
+        // Trigger collider — generous depth for finger poke
         var col       = exitButton3D.AddComponent<BoxCollider>();
         col.isTrigger = true;
-        col.size      = new Vector3(0.14f, 0.07f, 0.06f);
+        col.size      = new Vector3(0.2f, 0.1f, 0.15f);
 
-        // ---- ProximityButton interaction ----
+        // ProximityButton — accepts any collider
         var pb          = exitButton3D.AddComponent<ProximityButton>();
         pb.fillRenderer = rend;
-        pb.normalColor  = new Color(0.08f, 0.08f, 0.12f, 1f);
-        pb.hoveredColor = new Color(0.25f, 0.65f, 1.0f, 1f);
+        pb.normalColor  = new Color(0.08f, 0.08f, 0.14f, 1f);
+        pb.hoveredColor = new Color(0.25f, 0.65f, 1.0f,  1f);
         pb.cooldown     = 1.5f;
         pb.onPressed.AddListener(OnExitButtonPressed);
 
         exitButton3D.SetActive(false);
     }
 
-    // Place the exit button in world space below the canvas.
-    // Called after PositionCanvasInFrontOf() has set the canvas position.
     private void PositionExitButton()
     {
         if (exitButton3D == null || canvasGO == null) return;
 
-        // Canvas world position + offset: 0.18m below, same forward distance
-        var canvasRect  = canvasGO.GetComponent<RectTransform>();
-        Vector3 canvasWorldPos = canvasGO.transform.position;
-
-        // "Down" in the camera's local space
-        Transform cam   = cameraOverride != null
+        Transform cam = cameraOverride != null
             ? cameraOverride
             : (Camera.main != null ? Camera.main.transform : null);
 
-        Vector3 down    = cam != null ? -cam.up : Vector3.down;
-        Vector3 forward = cam != null ?  cam.forward : Vector3.forward;
+        Vector3 canvasPos = canvasGO.transform.position;
+        Vector3 down      = cam != null ? -cam.up      : Vector3.down;
+        Vector3 forward   = cam != null ?  cam.forward : Vector3.forward;
 
-        // Position: below the canvas centre, slightly closer to the user
-        exitButton3D.transform.position = canvasWorldPos
-            + down    * 0.18f
-            + forward * 0.01f; // 1cm forward so it's easy to poke
+        // 18cm below canvas centre, 1cm closer to user so finger can poke it
+        exitButton3D.transform.position = canvasPos + down * 0.18f + forward * 0.01f;
 
-        // Face the camera
         if (cam != null)
             exitButton3D.transform.rotation = Quaternion.LookRotation(
                 exitButton3D.transform.position - cam.position, cam.up);
-    }
-
-    private void OnExitButtonPressed()
-    {
-        StopBreathing();
-        if (canvasGO != null) canvasGO.SetActive(false);
-        onExit?.Invoke();
     }
 
     // -------------------------------------------------------------------------
@@ -268,30 +242,28 @@ public class BreathingController : MonoBehaviour
 
         if (canvasGO != null)
         {
-            var existingContainer = canvasGO.transform.Find("BreathingContainer");
-            if (existingContainer != null)
+            var existing = canvasGO.transform.Find("BreathingContainer");
+            if (existing != null)
             {
-                containerRectTransform = existingContainer.GetComponent<RectTransform>();
-                circleImage   = existingContainer.Find("BreathingCircle")?.GetComponent<Image>();
-                outlineImage  = existingContainer.Find("BreathingOutline")?.GetComponent<Image>();
-                sheenImage    = existingContainer.Find("BreathingSheen")?.GetComponent<Image>();
-                phaseText     = existingContainer.Find("PhaseText")?.GetComponent<Text>();
-                subtitleText  = existingContainer.Find("SubtitleText")?.GetComponent<Text>();
+                containerRectTransform = existing.GetComponent<RectTransform>();
+                circleImage   = existing.Find("BreathingCircle")?.GetComponent<Image>();
+                outlineImage  = existing.Find("BreathingOutline")?.GetComponent<Image>();
+                sheenImage    = existing.Find("BreathingSheen")?.GetComponent<Image>();
+                phaseText     = existing.Find("PhaseText")?.GetComponent<Text>();
+                subtitleText  = existing.Find("SubtitleText")?.GetComponent<Text>();
                 var eb        = this.transform.Find("ExitButton3D");
                 if (eb != null) exitButton3D = eb.gameObject;
                 return;
             }
         }
 
-        // ------------------------------------------------------------------
         // Canvas — 800x600 px · scale 0.0005 → 0.4m x 0.3m in world space
-        // ------------------------------------------------------------------
         canvasGO              = new GameObject("BreathingCanvas");
         Canvas canvas         = canvasGO.AddComponent<Canvas>();
         canvas.renderMode     = RenderMode.WorldSpace;
         canvas.worldCamera    = Camera.main;
         canvasGO.AddComponent<CanvasScaler>();
-        // No GraphicRaycaster needed — interaction via physics collider
+        // No GraphicRaycaster needed — interaction is via physics collider
 
         var canvasRect        = canvasGO.GetComponent<RectTransform>();
         canvasRect.sizeDelta  = new Vector2(800f, 600f);
@@ -303,7 +275,7 @@ public class BreathingController : MonoBehaviour
         if (uiFont == null) uiFont = Font.CreateDynamicFontFromOSFont("Arial", 14);
         uiFontCached = uiFont;
 
-        // Dim overlay
+        // Dim overlay (alpha 0 by default — adjust in Inspector if needed)
         GameObject overlayGO       = new GameObject("BreathingOverlay");
         overlayGO.transform.SetParent(canvas.transform, false);
         var overlayImage           = overlayGO.AddComponent<Image>();
@@ -399,13 +371,11 @@ public class BreathingController : MonoBehaviour
     {
         while (true)
         {
-            yield return DoPhase("Inhale", inhaleDuration, 1.15f,
-                gradientColorA, gradientColorB);
-            yield return DoPhase("Hold", holdDuration, 1.0f,
+            yield return DoPhase("Inhale", inhaleDuration, 1.15f, gradientColorA, gradientColorB);
+            yield return DoPhase("Hold",   holdDuration,   1.0f,
                 Color.Lerp(gradientColorA, gradientColorB, 0.5f),
                 Color.Lerp(gradientColorA, gradientColorB, 0.5f));
-            yield return DoPhase("Exhale", exhaleDuration, 0.6f,
-                gradientColorB, gradientColorA);
+            yield return DoPhase("Exhale", exhaleDuration, 0.6f, gradientColorB, gradientColorA);
         }
     }
 
@@ -427,16 +397,12 @@ public class BreathingController : MonoBehaviour
             if (isHold)
             {
                 Vector3 baseScale = Vector3.Lerp(startScale, endScale, p);
-                float ramp = Mathf.Min(holdPulseRamp, duration * 0.5f);
-                float env  = 1f;
-                if (ramp > 0f)
-                {
-                    float rise = Mathf.Clamp01(t / ramp);
-                    float fall = Mathf.Clamp01((duration - t) / ramp);
-                    env = Mathf.Min(rise, fall);
-                }
-                float amp   = holdPulseAmplitude * env;
-                float pulse = 1f + amp * Mathf.Sin(t * Mathf.PI * 2f * holdPulseFrequency);
+                float ramp  = Mathf.Min(holdPulseRamp, duration * 0.5f);
+                float env   = ramp > 0f
+                    ? Mathf.Min(Mathf.Clamp01(t / ramp), Mathf.Clamp01((duration - t) / ramp))
+                    : 1f;
+                float pulse = 1f + holdPulseAmplitude * env
+                    * Mathf.Sin(t * Mathf.PI * 2f * holdPulseFrequency);
                 containerRectTransform.localScale = baseScale * pulse;
             }
             else
@@ -448,15 +414,13 @@ public class BreathingController : MonoBehaviour
 
             if (sheenImage != null)
             {
-                float sheen = Mathf.Lerp(baseSheenAlpha, baseSheenAlpha * 0.6f, p);
                 var sc = sheenImage.color;
-                sc.a = sheen;
+                sc.a = Mathf.Lerp(baseSheenAlpha, baseSheenAlpha * 0.6f, p);
                 sheenImage.color = sc;
             }
 
-            int remaining     = Mathf.CeilToInt(duration - t);
             phaseText.text    = name;
-            subtitleText.text = string.Format("{0}s", Mathf.Max(0, remaining));
+            subtitleText.text = Mathf.Max(0, Mathf.CeilToInt(duration - t)) + "s";
             yield return null;
         }
 
@@ -476,8 +440,7 @@ public class BreathingController : MonoBehaviour
             return;
         }
 
-        if (canvasGO == null)
-            canvasGO = GameObject.Find("BreathingCanvas");
+        if (canvasGO == null) canvasGO = GameObject.Find("BreathingCanvas");
         if (canvasGO == null) return;
 
         var canvas = canvasGO.GetComponent<Canvas>();
