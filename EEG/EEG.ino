@@ -1,12 +1,9 @@
-const int eegPin = A0;   // Analog input pin
-const float Vref = 5.0;  // Reference voltage (Uno R4 default)
-const int ADC_RES = 4095; // 12-bit ADC (0–4095)
+const int eegPin = A1;   // Analog input pin
+const float Vref = 5.0;  // Reference voltage (default)
+const int ADC_RES = 1023; // 10-bit ADC (0–1023)
 
 void setup() {
   Serial.begin(115200);
-
-  // Set ADC resolution to 12 bits (important for Uno R4)
-  analogReadResolution(12);
 
   Serial.println("EEG Read Start");
 }
@@ -23,5 +20,7 @@ void loop() {
   Serial.print("  Voltage: ");
   Serial.println(voltage, 6);
 
-  delay(5);  // ~200 Hz sampling (adjust as needed)
+  delay(5);  // ~200 Hz sampling
 }
+
+//Raw: # Voltage: #
