@@ -43,8 +43,6 @@ We utilized a modular architecture to integrate hardware and human feelings to c
 
 - **Custom EEG:** We created an EEG with just electrodes, an Arduino and some cables, sauntering the cables together to create a working device that streams data.  
 
-- **Wireless Neuro-Streaming:** Successfully streaming processed EEG brainwave data to a standalone mobile headset.  
-
 - **Neuro-Adaptive Environment:** The environment in the VR adapts to how the user is feeling and changes the surroundings based on their emotions.  
 
 - **Functional MVP:** Moving from raw hardware components to a working prototype in just 24 hours.  
