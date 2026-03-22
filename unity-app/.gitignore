@@ -1,0 +1,65 @@
+# =========================
+# Unity Generated Folders
+# =========================
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+
+# MemoryCaptures (profiling)
+MemoryCaptures/
+sample2*
+# =========================
+# Unity Cache / Artifacts
+# =========================
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+
+# =========================
+# Unity Meta handling
+# =========================
+# IMPORTANT: keep .meta files
+!*.meta
+
+# =========================
+# Rider / VS / VSCode
+# =========================
+.vscode/
+.idea/
+*.mdb
+*.opendb
+
+# =========================
+# macOS junk
+# =========================
+.DS_Store
+
+# =========================
+# Android / Quest build stuff
+# =========================
+.gradle/
+*.apk
+*.aab
+*.keystore
+*.keystore.user
+
+# =========================
+# Crash / logs
+# =========================
+sysinfo.txt
+
+# =========================
+# Addressables / Asset Bundles (if used)
+# =========================
+ServerData/
