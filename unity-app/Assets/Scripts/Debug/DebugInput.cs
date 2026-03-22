@@ -1,24 +1,30 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class DebugInput : MonoBehaviour
 {
     public RegulationStateManager regulationStateManager;
-    public float changeSpeed = 0.5f;
+    public float changeAmount = 0.2f;
 
     private void Update()
     {
-        if (regulationStateManager == null) return;
+        if (regulationStateManager == null || Keyboard.current == null)
+            return;
 
-        if (Input.GetKey(KeyCode.UpArrow))
+        if (Keyboard.current.jKey.wasPressedThisFrame)
         {
-            regulationStateManager.rawCalmScore += changeSpeed * Time.deltaTime;
+            regulationStateManager.rawCalmScore =
+                Mathf.Clamp01(regulationStateManager.rawCalmScore + changeAmount);
+
+            Debug.Log("J pressed, rawCalmScore = " + regulationStateManager.rawCalmScore);
         }
 
-        if (Input.GetKey(KeyCode.DownArrow))
+        if (Keyboard.current.kKey.wasPressedThisFrame)
         {
-            regulationStateManager.rawCalmScore -= changeSpeed * Time.deltaTime;
-        }
+            regulationStateManager.rawCalmScore =
+                Mathf.Clamp01(regulationStateManager.rawCalmScore - changeAmount);
 
-        regulationStateManager.rawCalmScore = Mathf.Clamp01(regulationStateManager.rawCalmScore);
+            Debug.Log("K pressed, rawCalmScore = " + regulationStateManager.rawCalmScore);
+        }
     }
 }
