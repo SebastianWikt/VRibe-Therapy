@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using UnityEngine.Events;
 
 // Calming breathing exercise UI inspired by common paced-breathing techniques
 // (e.g., 4-4-6 inhale/hold/exhale pattern). This script creates a soft
@@ -30,6 +32,12 @@ public class BreathingController : MonoBehaviour
     public Color overlayColor = new Color(0f, 0f, 0f, 0.45f);
     public Vector2 circleSize = new Vector2(240, 240);
     public float outlinePadding = 10f;
+    [Tooltip("Hold-phase pulse amplitude (fractional scale, e.g. 0.03 = 3%)")]
+    public float holdPulseAmplitude = 0.0025f;
+    [Tooltip("Hold-phase pulse frequency in Hz")]
+    public float holdPulseFrequency = 0.1f;
+    [Tooltip("Maximum ramp (seconds) for pulse envelope at start/end of hold")]
+    public float holdPulseRamp = 0.25f;
 
     private Image circleImage;
     private Image outlineImage;
@@ -37,6 +45,12 @@ public class BreathingController : MonoBehaviour
     private RectTransform containerRectTransform;
     private Text phaseText;
     private Text subtitleText;
+    private Font uiFontCached;
+
+    [Header("Exit UI")]
+    public bool destroyOnExit = false;
+    public UnityEvent onExit;
+    private GameObject exitPanel;
 
     void Start()
     {
@@ -95,6 +109,8 @@ public class BreathingController : MonoBehaviour
     }
 
     private Coroutine loopCoroutine;
+    private Scene previousActiveScene;
+    private bool previousActiveSceneCaptured = false;
 
     // Public API to start/stop the breathing exercise (can be called from UnityEvents).
     public void StartBreathing()
@@ -108,6 +124,15 @@ public class BreathingController : MonoBehaviour
             // reset scale so the bubble starts from neutral
             if (containerRectTransform != null) containerRectTransform.localScale = Vector3.one;
             if (containerRectTransform != null) containerRectTransform.gameObject.SetActive(true);
+            if (exitPanel != null) exitPanel.SetActive(true);
+            // capture active scene if this controller is running in an additively-loaded overlay scene
+            var active = SceneManager.GetActiveScene();
+            if (this.gameObject.scene != active)
+            {
+                previousActiveScene = active;
+                previousActiveSceneCaptured = true;
+            }
+
             loopCoroutine = StartCoroutine(BreathLoop());
         }
     }
@@ -123,8 +148,120 @@ public class BreathingController : MonoBehaviour
         if (phaseText != null) phaseText.text = string.Empty;
         if (circleImage != null) circleImage.enabled = false;
         if (containerRectTransform != null) containerRectTransform.gameObject.SetActive(false);
+        if (exitPanel != null) exitPanel.SetActive(false);
     }
 
+    private void CreateExitUI(GameObject container)
+    {
+        if (container == null) return;
+
+        // Panel anchored to top-right of screen overlay
+        var canvas = container.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+
+        exitPanel = new GameObject("BreathingExitPanel");
+        exitPanel.transform.SetParent(canvas.transform, false);
+        var rect = exitPanel.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-16f, -16f);
+        rect.sizeDelta = new Vector2(140f, 48f);
+
+        var bg = exitPanel.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0.45f);
+
+        // Button
+        GameObject btnGO = new GameObject("ExitButton");
+        btnGO.transform.SetParent(exitPanel.transform, false);
+        var btnRect = btnGO.AddComponent<RectTransform>();
+        btnRect.anchorMin = Vector2.zero;
+        btnRect.anchorMax = Vector2.one;
+        btnRect.sizeDelta = Vector2.zero;
+
+        var img = btnGO.AddComponent<Image>();
+        img.color = new Color(1f, 1f, 1f, 0.06f);
+        var button = btnGO.AddComponent<Button>();
+        button.onClick.AddListener(OnExitButtonPressed);
+
+        // Button text
+        GameObject btText = new GameObject("ExitText");
+        btText.transform.SetParent(btnGO.transform, false);
+        var t = btText.AddComponent<Text>();
+        t.alignment = TextAnchor.MiddleCenter;
+        t.font = uiFontCached;
+        t.fontSize = 18;
+        t.color = Color.white;
+        t.text = "Exit";
+        var tt = btText.GetComponent<RectTransform>();
+        tt.anchorMin = Vector2.zero;
+        tt.anchorMax = Vector2.one;
+        tt.sizeDelta = Vector2.zero;
+
+        // Also create a tiny world-space panel parented to main camera (if present)
+        if (Camera.main != null)
+        {
+            GameObject camPanel = new GameObject("BreathingExitPanel_Cam");
+            camPanel.transform.SetParent(Camera.main.transform, false);
+            var camCanvas = camPanel.AddComponent<Canvas>();
+            camCanvas.renderMode = RenderMode.WorldSpace;
+            var camRect = camPanel.AddComponent<RectTransform>();
+            camRect.sizeDelta = new Vector2(200f, 60f);
+            camRect.localPosition = Camera.main.transform.forward * 1.0f + new Vector3(0.5f, -0.5f, 0f);
+            camRect.localRotation = Quaternion.identity;
+
+            var camBg = camPanel.AddComponent<Image>();
+            camBg.color = new Color(0f, 0f, 0f, 0.4f);
+
+            // world button
+            GameObject wbtn = new GameObject("ExitButtonWorld");
+            wbtn.transform.SetParent(camPanel.transform, false);
+            var wimg = wbtn.AddComponent<Image>();
+            wimg.color = new Color(1f, 1f, 1f, 0.06f);
+            var wbtnRect = wbtn.GetComponent<RectTransform>();
+            wbtnRect.anchorMin = new Vector2(0.5f, 0.5f);
+            wbtnRect.anchorMax = new Vector2(0.5f, 0.5f);
+            wbtnRect.anchoredPosition = Vector2.zero;
+            wbtnRect.sizeDelta = new Vector2(160f, 40f);
+            var wbutton = wbtn.AddComponent<Button>();
+            wbutton.onClick.AddListener(OnExitButtonPressed);
+
+            GameObject wtxt = new GameObject("ExitTextWorld");
+            wtxt.transform.SetParent(wbtn.transform, false);
+            var wt = wtxt.AddComponent<Text>();
+            wt.font = uiFontCached;
+            wt.alignment = TextAnchor.MiddleCenter;
+            wt.text = "Exit";
+            wt.color = Color.white;
+            wt.fontSize = 18;
+            var wrt = wtxt.GetComponent<RectTransform>();
+            wrt.anchorMin = Vector2.zero;
+            wrt.anchorMax = Vector2.one;
+            wrt.sizeDelta = Vector2.zero;
+        }
+
+        // start hidden until breathing starts
+        exitPanel.SetActive(false);
+    }
+
+    private void OnExitButtonPressed()
+    {
+        // Stop visuals and notify parent; parent/owner should handle unloading or destroying overlay.
+        StopBreathing();
+        // hide UI immediately so other systems stop receiving input
+        var canvasGO = GameObject.Find("BreathingCanvas");
+        if (canvasGO != null) canvasGO.SetActive(false);
+        if (exitPanel != null) exitPanel.SetActive(false);
+
+        onExit?.Invoke();
+        }
+
+    // Public wrapper so parent-scene UI can call Exit via Inspector-assigned OnClick.
+    public void Exit()
+    {
+        OnExitButtonPressed();
+    }
+    
     void SetupUI()
     {
         Canvas canvas = FindObjectOfType<Canvas>();
@@ -204,6 +341,7 @@ public class BreathingController : MonoBehaviour
         if (uiFont == null) uiFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
         if (uiFont == null) uiFont = Font.CreateDynamicFontFromOSFont("Arial", 14);
         phaseText.font = uiFont;
+        uiFontCached = uiFont;
         phaseText.fontSize = 36;
         phaseText.fontStyle = FontStyle.Bold;
         phaseText.color = Color.white;
@@ -249,7 +387,30 @@ public class BreathingController : MonoBehaviour
             float p = Mathf.SmoothStep(0f, 1f, raw);
 
             // scale the whole container so outline + circle + sheen all scale together
-            containerRectTransform.localScale = Vector3.Lerp(startScale, endScale, p);
+            bool isHold = string.Equals(name, "Hold", System.StringComparison.OrdinalIgnoreCase);
+            if (isHold)
+            {
+                // base scale smoothly interpolates from start->end over the hold
+                Vector3 baseScale = Vector3.Lerp(startScale, endScale, p);
+
+                // pulse envelope: ramp up/down at start and end to avoid abruptness
+                float ramp = Mathf.Min(holdPulseRamp, duration * 0.5f);
+                float env = 1f;
+                if (ramp > 0f)
+                {
+                    float rise = Mathf.Clamp01(t / ramp);
+                    float fall = Mathf.Clamp01((duration - t) / ramp);
+                    env = Mathf.Min(rise, fall);
+                }
+
+                float amp = holdPulseAmplitude * env;
+                float pulse = 1f + amp * Mathf.Sin(t * Mathf.PI * 2f * holdPulseFrequency);
+                containerRectTransform.localScale = baseScale * pulse;
+            }
+            else
+            {
+                containerRectTransform.localScale = Vector3.Lerp(startScale, endScale, p);
+            }
 
             // Simulated gradient: lerp between two colors
             circleImage.color = Color.Lerp(startGradient, endGradient, p);

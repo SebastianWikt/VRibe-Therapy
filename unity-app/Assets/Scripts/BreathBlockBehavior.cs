@@ -192,7 +192,31 @@ public class BreathBlockBehavior : MonoBehaviour
         // restore color to original on the object (optional)
         if (rend != null) rend.material.color = originalColor;
 
-        // Load the breathing scene additively and position its UI in front of the player
+        // Prefer using a BreathingOverlayLoader if present.
+        // First, check if a CubePopStarter on this object has an assigned loader (inspector-assigned).
+        BreathingOverlayLoader loader = null;
+        var starter = GetComponent<CubePopStarter>();
+        if (starter != null && starter.overlayLoader != null)
+        {
+            loader = starter.overlayLoader;
+            Debug.Log("BreathBlockBehavior: Using overlay loader assigned on CubePopStarter.");
+        }
+
+        // Next, try to find any loader in the scene if none assigned on the cube.
+        if (loader == null)
+        {
+            loader = GameObject.FindObjectOfType<BreathingOverlayLoader>();
+            if (loader != null) Debug.Log("BreathBlockBehavior: Found BreathingOverlayLoader in scene via FindObjectOfType.");
+            else Debug.Log("BreathBlockBehavior: No BreathingOverlayLoader found in scene.");
+        }
+
+        if (loader != null)
+        {
+            loader.StartBreathingExercise();
+            yield break; // loader takes responsibility for loading and starting the overlay
+        }
+
+        // Fallback: Load the breathing scene additively and position its UI in front of the player
         if (!string.IsNullOrEmpty(breathingSceneName))
         {
             var op = SceneManager.LoadSceneAsync(breathingSceneName, LoadSceneMode.Additive);
