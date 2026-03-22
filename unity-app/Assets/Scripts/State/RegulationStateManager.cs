@@ -36,8 +36,14 @@ public class RegulationStateManager : MonoBehaviour
 
     private void Update()
     {
+        rawCalmScore = Mathf.Clamp01(rawCalmScore);
+
         SmoothSignal();
         EvaluateState();
+
+        Debug.Log("Raw Calm: " + rawCalmScore +
+                  " | Smoothed Calm: " + smoothedCalmScore +
+                  " | State: " + currentState);
     }
 
     private void SmoothSignal()
@@ -45,7 +51,7 @@ public class RegulationStateManager : MonoBehaviour
         smoothedCalmScore = Mathf.Lerp(
             smoothedCalmScore,
             rawCalmScore,
-            smoothingSpeed * Time.deltaTime
+            Mathf.Clamp01(smoothingSpeed * Time.deltaTime)
         );
     }
 
