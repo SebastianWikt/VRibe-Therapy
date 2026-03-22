@@ -59,7 +59,6 @@ public class BreathingController : MonoBehaviour
             : (Camera.main != null ? Camera.main.transform : null);
 
         PositionCanvasInFrontOf(cam, canvasDistance);
-        PositionExitButton();
 
         if (autoStart) StartBreathing();
     }
@@ -117,8 +116,7 @@ public class BreathingController : MonoBehaviour
 
         Debug.Log("BreathingController: StartBreathing() called");
 
-        if (circleImage == null || containerRectTransform == null || phaseText == null)
-            SetupUI();
+        SetupUI();
 
         if (canvasGO != null)    canvasGO.SetActive(true);
         if (circleImage != null) circleImage.enabled = true;
@@ -128,6 +126,7 @@ public class BreathingController : MonoBehaviour
             containerRectTransform.localScale = Vector3.one;
             containerRectTransform.gameObject.SetActive(true);
         }
+        PositionExitButton();
         if (exitButton3D != null) exitButton3D.SetActive(true);
 
         loopCoroutine = StartCoroutine(BreathLoop());
@@ -341,7 +340,7 @@ public class BreathingController : MonoBehaviour
         phaseText.fontStyle        = FontStyle.Bold;
         phaseText.color            = Color.white;
         var txtRect                = txtGO.GetComponent<RectTransform>();
-        txtRect.anchoredPosition   = new Vector2(0f, -circleSize.y * 0.7f);
+        txtRect.anchoredPosition   = new Vector2(0f, -circleSize.y * 0.3f);
         txtRect.sizeDelta          = new Vector2(300f, 60f);
 
         // Countdown subtitle
