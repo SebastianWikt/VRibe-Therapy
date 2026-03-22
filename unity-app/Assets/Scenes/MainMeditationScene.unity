@@ -245,7 +245,7 @@ ParticleSystem:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 58542015}
   serializedVersion: 8
-  lengthInSec: 5
+  lengthInSec: 1000
   simulationSpeed: 1
   stopAction: 0
   cullingMode: 0
@@ -491,7 +491,7 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 1
+      scalar: 0.2
       minScalar: 1
       maxCurve:
         serializedVersion: 2
@@ -6727,10 +6727,10 @@ MonoBehaviour:
   minFogDensity: 0.005
   rainParticleSystem: {fileID: 58542018}
   maxRainEmission: 1000
-  rainAudioSource: {fileID: 0}
-  birdAudioSource: {fileID: 0}
-  maxRainVolume: 0.8
-  maxBirdVolume: 0.7
+  rainAudioSource: {fileID: 1850633316}
+  birdAudioSource: {fileID: 1864278250}
+  maxRainVolume: 0.655
+  maxBirdVolume: 0.578
   visualLerpSpeed: 2.5
   audioLerpSpeed: 2
 --- !u!4 &1338008482
@@ -7876,7 +7876,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 175c8cdfa1570e441bec37cf3e2af1bf, type: 3}
-  m_PlayOnAwake: 0
+  m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
   Loop: 1
