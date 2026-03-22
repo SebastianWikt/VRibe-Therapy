@@ -85,7 +85,6 @@ public class VibeBridge : MonoBehaviour
         // --- 1. HANDLE REAL EEG DATA (LSL) ---
         if (inlet != null)
         {
-            Debug.Log($"in LSL");
             double timestamp = inlet.pull_sample(sample, 0.0f);
             while (inlet.pull_sample(sample, 0.0f) != 0) 
             {
@@ -96,8 +95,8 @@ public class VibeBridge : MonoBehaviour
                 float rawRatio = alpha / (alpha + beta + 0.001f);
 
                 // 2. Define your observed range (Tweak these if needed)
-                float minObserved = 0.35f; 
-                float maxObserved = 0.75f;
+                float minObserved = 0.4f; 
+                float maxObserved = 0.7f;
 
                 // 3. Map the rawRatio into a 0 to 1 range
                 // This stretches the 0.35-0.75 jump into a full 0.0-1.0 jump
@@ -105,7 +104,7 @@ public class VibeBridge : MonoBehaviour
                 regulationStateManager.rawCalmScore = Mathf.Clamp01(brainScore);
                 
                 Debug.Log($"SUCCESS: New Data Pulled! Score: {brainScore}");
-                Debug.Log($"Raw: {rawRatio:F2} | Scaled Score: {brainScore:F2}");
+                Debug.Log($"alpha: {alpha:F2} | beta: {beta:F2}");
             }
         }
 
