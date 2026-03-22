@@ -1,6 +1,6 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+// Scene loading removed - prefab-only workflow
 
 // Attach this to a grabbable block. Configure `breathingSceneName` to the scene to load.
 public class BreathBlockBehavior : MonoBehaviour
@@ -212,77 +212,11 @@ public class BreathBlockBehavior : MonoBehaviour
 
         if (loader != null)
         {
-            loader.StartBreathingExercise();
-            yield break; // loader takes responsibility for loading and starting the overlay
+            loader.StartBreathingExerciseFor(this.gameObject);
+            yield break; // loader takes responsibility for instantiating the prefab and starting the exercise
         }
 
-        // Fallback: Load the breathing scene additively and position its UI in front of the player
-        if (!string.IsNullOrEmpty(breathingSceneName))
-        {
-            var op = SceneManager.LoadSceneAsync(breathingSceneName, LoadSceneMode.Additive);
-            if (op != null)
-            {
-                while (!op.isDone)
-                {
-                    yield return null;
-                }
-
-                // try to find the breathing controller in the loaded scene
-                var ctrl = GameObject.FindObjectOfType<BreathingController>();
-                Transform camT = null;
-                if (Camera.main != null) camT = Camera.main.transform;
-                else
-                {
-                    var cam = GameObject.FindObjectOfType<Camera>();
-                    if (cam != null) camT = cam.transform;
-                }
-
-                if (ctrl != null)
-                {
-                    Debug.Log("BreathBlockBehavior: BreathingController found in loaded scene.");
-                    if (camT != null) Debug.Log("BreathBlockBehavior: using camera " + camT.name);
-                    else Debug.LogWarning("BreathBlockBehavior: no camera found for positioning.");
-                    // Position the breathing canvas in front of camera, then start breathing
-                    if (camT != null) ctrl.PositionCanvasInFrontOf(camT, 1.2f);
-
-                    // animate canvas scale from 0 -> target for entrance
-                    var canvasGO = GameObject.Find("BreathingCanvas");
-                    if (canvasGO != null)
-                    {
-                        var targetScale = canvasGO.transform.localScale;
-                        canvasGO.transform.localScale = Vector3.zero;
-                        float anim = 0f;
-                        float animDur = 0.35f;
-                        while (anim < animDur)
-                        {
-                            anim += Time.deltaTime;
-                            float p = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(anim / animDur));
-                            canvasGO.transform.localScale = Vector3.Lerp(Vector3.zero, targetScale, p);
-                            yield return null;
-                        }
-                        canvasGO.transform.localScale = targetScale;
-                    }
-
-                    ctrl.StartBreathing();
-
-                    // Smoke-test visual indicator so it's obvious the scene loaded
-                    if (camT != null)
-                    {
-                        var indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                        indicator.name = "SmokeTestIndicator";
-                        indicator.transform.position = camT.position + camT.forward * 0.9f + camT.up * -0.1f;
-                        indicator.transform.localScale = Vector3.one * 0.12f;
-                        var mr = indicator.GetComponent<Renderer>();
-                        if (mr != null)
-                        {
-                            mr.material = new Material(Shader.Find("Unlit/Color"));
-                            mr.material.color = Color.cyan;
-                        }
-                        Destroy(indicator, 4f);
-                        Debug.Log("BreathBlockBehavior: SmokeTestIndicator created in front of camera.");
-                    }
-                }
-            }
-        }
+        // Prefab-only workflow: if no BreathingOverlayLoader is present, bail out.
+        Debug.LogWarning("BreathBlockBehavior: No BreathingOverlayLoader found. Prefab-only workflow requires a BreathingOverlayLoader in the scene with `breathingOverlayPrefab` assigned.");
     }
 }

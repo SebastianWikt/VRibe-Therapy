@@ -17,7 +17,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/GavinScenes/BreatheScene.unity
     guid: 3bf099febb919431bbb5ec089461e81b
-  - enabled: 1
+  - enabled: 0
     path: Assets/GavinScenes/BreathingExercise.unity
     guid: a1b2c3d4e5f607890abcdef123456789
   - enabled: 0

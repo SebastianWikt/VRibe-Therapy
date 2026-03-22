@@ -1,13 +1,11 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+// Scene-based loading removed - prefab-only workflow
 
 // Parent-side helper: load breathing overlay scene additively, start the exercise,
 // show an Exit button in the parent canvas, and safely unload the overlay when finished.
 public class BreathingOverlayLoader : MonoBehaviour
 {
-    [Tooltip("Name of the scene that contains the BreathingController (additive overlay)")]
-    public string breathingSceneName = "BreathingScene";
     [Tooltip("Small delay before unloading overlay to let XR subsystems quiesce")]
     public float unloadDelay = 0.6f;
     [Tooltip("If true, create a parent-scene Exit button instead of using the overlay's button")]
@@ -16,7 +14,7 @@ public class BreathingOverlayLoader : MonoBehaviour
     [Tooltip("Optional: assign a prefab (or root GameObject) containing the breathing overlay (BreathingController). If set, the loader will instantiate this prefab instead of loading an additive scene.")]
     public GameObject breathingOverlayPrefab;
 
-    private Scene overlayScene;
+    // Scene-based fields removed; prefab-only workflow
     private BreathingController controller;
     private GameObject parentExitPanel;
     // If using prefab instantiation, keep the instantiated root here so we can destroy it on exit
@@ -60,49 +58,8 @@ public class BreathingOverlayLoader : MonoBehaviour
         }
         else
         {
-            Debug.Log("BreathingOverlayLoader: Loading scene '" + breathingSceneName + "' additively.");
-            var op = SceneManager.LoadSceneAsync(breathingSceneName, LoadSceneMode.Additive);
-            if (op == null)
-            {
-                Debug.LogWarning("BreathingOverlayLoader: Failed to start loading breathing scene: " + breathingSceneName);
-                yield break;
-            }
-
-            while (!op.isDone) yield return null;
-
-            overlayScene = SceneManager.GetSceneByName(breathingSceneName);
-            if (!overlayScene.IsValid())
-            {
-                Debug.LogWarning("BreathingOverlayLoader: Breathing overlay scene not found after load: " + breathingSceneName);
-                // Log currently loaded scenes for debugging
-                for (int i = 0; i < SceneManager.sceneCount; i++) Debug.Log("Loaded scene: " + SceneManager.GetSceneAt(i).name);
-                yield break;
-            }
-
-            Debug.Log("BreathingOverlayLoader: Scene loaded: " + overlayScene.name + ", searching for BreathingController...");
-
-            // Find the BreathingController in the loaded scene (search root objects first)
-            foreach (var root in overlayScene.GetRootGameObjects())
-            {
-                Debug.Log("BreathingOverlayLoader: root object in overlay scene: " + root.name);
-                controller = root.GetComponentInChildren<BreathingController>();
-                if (controller != null) break;
-            }
-
-            // Fallback: try a global Find if not found in roots (in case controller was placed under DontDestroy or similar)
-            if (controller == null)
-            {
-                controller = GameObject.FindObjectOfType<BreathingController>();
-                if (controller != null) Debug.Log("BreathingOverlayLoader: Found BreathingController via global FindObjectOfType.");
-            }
-
-            if (controller == null)
-            {
-                Debug.LogWarning("BreathingOverlayLoader: BreathingController not found in overlay scene: " + breathingSceneName);
-                yield break;
-            }
-
-            Debug.Log("BreathingOverlayLoader: BreathingController found. Preparing overlay.");
+            Debug.LogWarning("BreathingOverlayLoader: No breathing overlay prefab assigned. Prefab-only workflow requires assigning `breathingOverlayPrefab` in the inspector.");
+            yield break;
         }
 
         // Defensive: make sure overlay doesn't try to unload itself
@@ -179,14 +136,31 @@ public class BreathingOverlayLoader : MonoBehaviour
 
     private void TryHideOverlayExitPanel()
     {
-        // overlay's exitPanel is private; we can attempt to find the object by name
-        var panel = GameObject.Find("BreathingExitPanel");
-        if (panel != null) panel.SetActive(false);
+        // If we instantiated the prefab, prefer finding the panel under the prefab root
+        if (instantiatedOverlayRoot != null)
+        {
+            var panel = instantiatedOverlayRoot.transform.Find("BreathingExitPanel");
+            if (panel != null) { try { panel.gameObject.SetActive(false); } catch { } return; }
+        }
+
+        // fallback global find
+        var gpanel = GameObject.Find("BreathingExitPanel");
+        if (gpanel != null) gpanel.SetActive(false);
     }
 
     private void CreateParentExitUI()
     {
-        var canvas = FindObjectOfType<Canvas>();
+        // Prefer a Canvas that lives in the same scene as this loader (parent scene).
+        Canvas canvas = null;
+        var allCanvases = GameObject.FindObjectsOfType<Canvas>();
+        foreach (var c in allCanvases)
+        {
+            if (c.gameObject.scene == this.gameObject.scene)
+            {
+                canvas = c;
+                break;
+            }
+        }
         if (canvas == null)
         {
             Debug.LogWarning("No Canvas found in parent scene to host Exit button.");
@@ -254,21 +228,7 @@ public class BreathingOverlayLoader : MonoBehaviour
         {
             try { instantiatedOverlayRoot.SetActive(false); } catch { }
         }
-        else if (overlayScene.IsValid() && overlayScene.isLoaded)
-        {
-            try
-            {
-                var roots = overlayScene.GetRootGameObjects();
-                for (int i = 0; i < roots.Length; i++)
-                {
-                    try { roots[i].SetActive(false); } catch { }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning("BreathingOverlayLoader: error disabling overlay roots: " + ex);
-            }
-        }
+        // No scene-unload path in prefab-only workflow.
 
         // Give other systems a longer moment to finish OnDisable/Updates
         yield return new WaitForSeconds(unloadDelay);
@@ -279,20 +239,7 @@ public class BreathingOverlayLoader : MonoBehaviour
             try { Destroy(instantiatedOverlayRoot); } catch (System.Exception ex) { Debug.LogWarning("BreathingOverlayLoader: error destroying instantiated overlay: " + ex); }
             instantiatedOverlayRoot = null;
         }
-        else if (overlayScene.IsValid() && overlayScene.isLoaded)
-        {
-            AsyncOperation unload = null;
-            try
-            {
-                unload = SceneManager.UnloadSceneAsync(overlayScene);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning("BreathingOverlayLoader: error starting UnloadSceneAsync: " + ex);
-            }
-
-            while (unload != null && !unload.isDone) yield return null;
-        }
+        // No scene-unload path in prefab-only workflow.
 
         // cleanup parent exit UI
         if (parentExitPanel != null) Destroy(parentExitPanel);
@@ -311,6 +258,6 @@ public class BreathingOverlayLoader : MonoBehaviour
             controller = null;
         }
 
-        overlayScene = default;
+        // finished cleanup
     }
 }

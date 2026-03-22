@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
+// Scene usage removed - prefab-only workflow
 using UnityEngine.Events;
 
 // Calming breathing exercise UI inspired by common paced-breathing techniques
@@ -109,8 +109,7 @@ public class BreathingController : MonoBehaviour
     }
 
     private Coroutine loopCoroutine;
-    private Scene previousActiveScene;
-    private bool previousActiveSceneCaptured = false;
+    // scene tracking removed
 
     // Public API to start/stop the breathing exercise (can be called from UnityEvents).
     public void StartBreathing()
@@ -125,13 +124,7 @@ public class BreathingController : MonoBehaviour
             if (containerRectTransform != null) containerRectTransform.localScale = Vector3.one;
             if (containerRectTransform != null) containerRectTransform.gameObject.SetActive(true);
             if (exitPanel != null) exitPanel.SetActive(true);
-            // capture active scene if this controller is running in an additively-loaded overlay scene
-            var active = SceneManager.GetActiveScene();
-            if (this.gameObject.scene != active)
-            {
-                previousActiveScene = active;
-                previousActiveSceneCaptured = true;
-            }
+            // prefab-only: no scene tracking required
 
             loopCoroutine = StartCoroutine(BreathLoop());
         }
@@ -264,6 +257,26 @@ public class BreathingController : MonoBehaviour
     
     void SetupUI()
     {
+        // If a BreathingCanvas + BreathingContainer already exists, reuse it to avoid
+        // creating duplicate full-screen panels (which can appear behind the world-space UI).
+        var existingCanvasGO = GameObject.Find("BreathingCanvas");
+        if (existingCanvasGO != null)
+        {
+            var existingContainer = GameObject.Find("BreathingContainer");
+            if (existingContainer != null)
+            {
+                containerRectTransform = existingContainer.GetComponent<RectTransform>();
+                circleImage = GameObject.Find("BreathingCircle")?.GetComponent<Image>();
+                outlineImage = GameObject.Find("BreathingOutline")?.GetComponent<Image>();
+                sheenImage = GameObject.Find("BreathingSheen")?.GetComponent<Image>();
+                phaseText = GameObject.Find("PhaseText")?.GetComponent<Text>();
+                subtitleText = GameObject.Find("SubtitleText")?.GetComponent<Text>();
+                var ep = GameObject.Find("BreathingExitPanel");
+                if (ep != null) exitPanel = ep;
+                return;
+            }
+        }
+
         Canvas canvas = FindObjectOfType<Canvas>();
         if (canvas == null)
         {
