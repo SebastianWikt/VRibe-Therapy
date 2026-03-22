@@ -23,7 +23,7 @@ VRibe Therapy is a neuro-responsive application built for the Meta Quest 3S. Usi
 
 We utilized a modular architecture to integrate hardware and human feelings to create a virtual environment:
 
-- **Hardware:** An Arduino Uno with EEG electrodes captures raw microvolt signals. We built this EEG device from scratch to go with our project.  
+- **Hardware:** An Arduino Uno with EEG circuit that captures raw microvolt signals. We built this EEG device from scratch to go with our project.  
 
 - **The Bridge:** A Python middleman server that uses Short-Term Fourier Transforms (STFT) to move data from the brain EEG domain to the frequency Unity domain. We use the Alpha and Beta waves outputted by the EEG to compute a Calm Score, detailing how relaxed the user is.  
 
@@ -62,7 +62,3 @@ We discovered that Neurofeedback is a game-changer for spatial computing. We lea
 - **ADHD Training Modules:** Developing specific "Gamified Focus" levels designed to help neurodivergent developers strengthen their concentration through biofeedback.  
 
 - **Hardware Miniaturization:** Moving from a bulky Arduino setup to a sleek, 3D-printed headband integrated directly into the Quest 3S strap.  
-
----
-
-## 🧩 Project Structure (Suggested)
