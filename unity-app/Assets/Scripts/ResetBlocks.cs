@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class ResetBlocks : MonoBehaviour
 {
@@ -7,6 +8,9 @@ public class ResetBlocks : MonoBehaviour
 
     private Vector3[] originalPositions;
     private Quaternion[] originalRotations;
+
+    // List to track spawned blocks
+    private List<GameObject> spawnedBlocks = new List<GameObject>();
 
     void Start()
     {
@@ -20,13 +24,21 @@ public class ResetBlocks : MonoBehaviour
         }
     }
 
+    // Call this from BlockSpawner after instantiating a new block
+    public void RegisterSpawnedBlock(GameObject block)
+    {
+        spawnedBlocks.Add(block);
+    }
+
     public void ResetAllBlocks()
     {
+        // Reset original blocks
         for (int i = 0; i < blocks.Length; i++)
         {
             var rb = blocks[i].GetComponent<Rigidbody>();
             if (rb != null)
             {
+                rb.isKinematic = false; // Ensure physics is enabled
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
                 rb.transform.position = originalPositions[i];
@@ -39,5 +51,13 @@ public class ResetBlocks : MonoBehaviour
                 blocks[i].transform.rotation = originalRotations[i];
             }
         }
+
+        // Destroy all spawned blocks
+        foreach (var block in spawnedBlocks)
+        {
+            if (block != null)
+                Destroy(block);
+        }
+        spawnedBlocks.Clear();
     }
 }

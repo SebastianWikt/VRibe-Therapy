@@ -3567,9 +3567,6 @@ MonoBehaviour:
   blocks:
   - {fileID: 2073380745}
   - {fileID: 2103379446}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
   - {fileID: 1030685954}
 --- !u!4 &1236011074
 Transform:
@@ -4980,8 +4977,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a83d55d381a994796b0068d8259b10a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlockSpawner
-  blockPrefab: {fileID: 1030685954}
+  blockPrefab: {fileID: 2103379446}
   spawnPoint: {fileID: 2112776666}
+  resetBlocks: {fileID: 1236011073}
 --- !u!4 &1713654844
 Transform:
   m_ObjectHideFlags: 0
