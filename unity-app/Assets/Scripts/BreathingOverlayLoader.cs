@@ -17,6 +17,8 @@ public class BreathingOverlayLoader : MonoBehaviour
     // Scene-based fields removed; prefab-only workflow
     private BreathingController controller;
     private GameObject parentExitPanel;
+    // If we need to create a Canvas because none exists in the parent scene
+    private GameObject fallbackCanvasGO;
     // If using prefab instantiation, keep the instantiated root here so we can destroy it on exit
     private GameObject instantiatedOverlayRoot;
     // Optional: object to hide while the overlay is active (e.g. the popped cube)
@@ -163,8 +165,17 @@ public class BreathingOverlayLoader : MonoBehaviour
         }
         if (canvas == null)
         {
-            Debug.LogWarning("No Canvas found in parent scene to host Exit button.");
-            return;
+            // Create a fallback Canvas in the parent scene so the Exit button is always visible
+            Debug.Log("BreathingOverlayLoader: No Canvas found in parent scene. Creating fallback Canvas for Exit button.");
+            fallbackCanvasGO = new GameObject("BreathingParentCanvas_Fallback");
+            // Ensure the fallback canvas lives in the same scene as this loader
+            try { fallbackCanvasGO.transform.SetParent(this.transform, false); } catch { }
+            var canvasComp = fallbackCanvasGO.AddComponent<Canvas>();
+            canvasComp.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasComp.sortingOrder = 1000; // render on top
+            fallbackCanvasGO.AddComponent<UnityEngine.UI.CanvasScaler>();
+            fallbackCanvasGO.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            canvas = canvasComp;
         }
 
         parentExitPanel = new GameObject("BreathingExitPanel_Parent");
@@ -243,6 +254,13 @@ public class BreathingOverlayLoader : MonoBehaviour
 
         // cleanup parent exit UI
         if (parentExitPanel != null) Destroy(parentExitPanel);
+
+        // destroy fallback Canvas if we created one
+        if (fallbackCanvasGO != null)
+        {
+            try { Destroy(fallbackCanvasGO); } catch { }
+            fallbackCanvasGO = null;
+        }
 
         // restore any hidden object (the cube) back to its previous active state
         if (hiddenObject != null)

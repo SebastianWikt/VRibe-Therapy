@@ -258,8 +258,8 @@ MonoBehaviour:
   overlayColor: {r: 0, g: 0, b: 0, a: 0.45}
   circleSize: {x: 240, y: 240}
   outlinePadding: 10
-  holdPulseAmplitude: 0.06
-  holdPulseFrequency: 1
+  holdPulseAmplitude: 0.02
+  holdPulseFrequency: 0.5
   holdPulseRamp: 0.25
   destroyOnExit: 0
   onExit:
@@ -336,7 +336,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: f97234180e35c4b7da71a8af40c78bca, type: 2}
+  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
