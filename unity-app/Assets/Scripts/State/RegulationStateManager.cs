@@ -41,9 +41,9 @@ public class RegulationStateManager : MonoBehaviour
         SmoothSignal();
         EvaluateState();
 
-        Debug.Log("Raw Calm: " + rawCalmScore +
-                  " | Smoothed Calm: " + smoothedCalmScore +
-                  " | State: " + currentState);
+        // Debug.Log("Raw Calm: " + rawCalmScore +
+        //           " | Smoothed Calm: " + smoothedCalmScore +
+        //           " | State: " + currentState);
     }
 
     private void SmoothSignal()
