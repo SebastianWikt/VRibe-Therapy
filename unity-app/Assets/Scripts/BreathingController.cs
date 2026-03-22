@@ -30,8 +30,8 @@ public class BreathingController : MonoBehaviour
     public Color gradientColorB = new Color(0.18f, 0.5f, 0.78f);
     [Tooltip("Semi-opaque background overlay to dim the scene")]
     public Color overlayColor = new Color(0f, 0f, 0f, 0.45f);
-    public Vector2 circleSize = new Vector2(240, 240);
-    public float outlinePadding = 10f;
+    public Vector2 circleSize = new Vector2(0.12f, 0.12f); // 12 cm
+    public float outlinePadding = 0.01f; // 1 cm
     [Tooltip("Hold-phase pulse amplitude (fractional scale, e.g. 0.03 = 3%)")]
     public float holdPulseAmplitude = 0.0025f;
     [Tooltip("Hold-phase pulse frequency in Hz")]
@@ -54,8 +54,13 @@ public class BreathingController : MonoBehaviour
 
     void Start()
     {
-        // Prepare UI but don't auto-start the breathing loop.
         SetupUI();
+
+        if (Camera.main != null)
+        {
+            PositionCanvasInFrontOf(Camera.main.transform, 1.2f);
+        }
+
         if (autoStart) StartBreathing();
     }
 
@@ -277,28 +282,39 @@ public class BreathingController : MonoBehaviour
             }
         }
 
-        Canvas canvas = FindObjectOfType<Canvas>();
-        if (canvas == null)
-        {
-            GameObject canvasGO = new GameObject("BreathingCanvas");
-            canvas = canvasGO.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            var scaler = canvasGO.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(800, 600);
-            canvasGO.AddComponent<GraphicRaycaster>();
-        }
+        GameObject canvasGO = new GameObject("BreathingCanvas");
+        Canvas canvas = canvasGO.AddComponent<Canvas>();
 
+        canvas.renderMode = RenderMode.WorldSpace;
+        canvas.worldCamera = Camera.main;
+
+        var scaler = canvasGO.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        canvasGO.AddComponent<GraphicRaycaster>();
+
+        // Full-screen dim overlay
+        GameObject overlayGO = new GameObject("BreathingOverlay");
+        overlayGO.transform.SetParent(canvas.transform, false);
+        var overlayImage = overlayGO.AddComponent<Image>();
+        overlayImage.color = overlayColor;
+        var overlayRect = overlayGO.GetComponent<RectTransform>();
+        overlayRect.anchorMin = Vector2.zero;
+        overlayRect.anchorMax = Vector2.one;
+        overlayRect.sizeDelta = Vector2.zero;
+        overlayImage.raycastTarget = false;
 
         // Container for the bubble so we can scale/position as one unit
         GameObject container = new GameObject("BreathingContainer");
         container.transform.SetParent(canvas.transform, false);
         var containerRect = container.AddComponent<RectTransform>();
         containerRect.sizeDelta = new Vector2(800, 600);
+        containerRect.anchorMin = new Vector2(0.5f, 0.5f);
+        containerRect.anchorMax = new Vector2(0.5f, 0.5f);
+        containerRect.pivot = new Vector2(0.5f, 0.5f);
         containerRect.anchoredPosition = Vector2.zero;
         containerRectTransform = containerRect;
         // Now create the exit UI, parented to the container
-        CreateExitUI(container);
+        //CreateExitUI(container);
         // Outline (white ring) - placed behind the gradient circle
         GameObject outlineGO = new GameObject("BreathingOutline");
         outlineGO.transform.SetParent(container.transform, false);
@@ -352,7 +368,7 @@ public class BreathingController : MonoBehaviour
         phaseText.color = Color.white;
         var txtRect = txtGO.GetComponent<RectTransform>();
         txtRect.anchoredPosition = new Vector2(0, -circleSize.y * 0.7f);
-        txtRect.sizeDelta = new Vector2(800, 90);
+        txtRect.sizeDelta = new Vector2(0.4f, 0.05f);
 
         // Subtitle/countdown text
         GameObject subGO = new GameObject("SubtitleText");
@@ -364,7 +380,7 @@ public class BreathingController : MonoBehaviour
         subtitleText.color = new Color(1f, 1f, 1f, 0.9f);
         var subRect = subGO.GetComponent<RectTransform>();
         subRect.anchoredPosition = new Vector2(0, -circleSize.y * 0.82f);
-        subRect.sizeDelta = new Vector2(800, 60);
+        subRect.sizeDelta = new Vector2(0.4f, 0.04f);
     }
 
     IEnumerator BreathLoop()
@@ -444,23 +460,31 @@ public class BreathingController : MonoBehaviour
     public void PositionCanvasInFrontOf(Transform cameraTransform, float distance = 1.2f)
     {
         if (cameraTransform == null) return;
+
         var canvasGO = GameObject.Find("BreathingCanvas");
         if (canvasGO == null) return;
 
         var canvas = canvasGO.GetComponent<Canvas>();
         if (canvas == null) canvas = canvasGO.AddComponent<Canvas>();
 
-        // Convert to World Space for VR placement
         canvas.renderMode = RenderMode.WorldSpace;
+        canvas.worldCamera = Camera.main;
+
         var rect = canvasGO.GetComponent<RectTransform>();
         if (rect == null) rect = canvasGO.AddComponent<RectTransform>();
 
-        rect.SetParent(null);
-        rect.position = cameraTransform.position + cameraTransform.forward * distance;
-        rect.rotation = Quaternion.LookRotation(cameraTransform.forward, cameraTransform.up);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
 
-        // Make the canvas reasonably sized in world units
-        rect.sizeDelta = new Vector2(800, 600);
-        rect.localScale = Vector3.one * 0.0025f;
+       rect.SetParent(cameraTransform, false);
+
+        // Centered in view
+        rect.localPosition = new Vector3(0f, 0f, 1.5f); // closer but not inside
+        rect.localRotation = Quaternion.identity;
+
+        // KEY: smaller canvas + normal scale
+        rect.sizeDelta = new Vector2(0.4f, 0.3f); // meters, not pixels
+        rect.localScale = Vector3.one;
     }
 }
